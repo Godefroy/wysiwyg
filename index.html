@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+  <title>WYSIWYG</title>
+  <meta charset="utf-8">
+  <link type="text/css" href="wysiwyg.css" rel="stylesheet" />
+  <script type="text/javascript" src="jquery-1.8.3.js"></script>
+  <script type="text/javascript" src="wysiwyg.js"></script>
+</head>
+<body>
+
+  <h1 class="editable">WYSIWYG</h1>
+
+  <div class="editable">
+    <p>
+      Topping bonbon lollipop lollipop carrot cake topping candy canes. Faworki apple pie marzipan chupa chups bonbon oat cake chocolate bar gingerbread jelly. Marzipan jelly beans powder halvah pastry topping. Cotton candy pudding oat cake jujubes gingerbread lollipop soufflé biscuit.
+    </p>
+    <p>
+      Cookie sweet roll sugar plum gummi bears icing. Cupcake powder halvah pastry. Wypas donut tootsie roll biscuit gummi bears.
+    </p>
+    <p>
+      Biscuit carrot cake tiramisu faworki. Danish sweet roll marshmallow candy canes biscuit dessert cupcake danish cookie. Macaroon tootsie roll tart wafer chocolate sugar plum. Tiramisu muffin chocolate cake cookie chocolate faworki powder chupa chups.
+    </p>
+  </div>
+
+  <div class="editable">
+    <p>
+      Jujubes dessert chocolate pudding. Tart topping wypas icing marshmallow chocolate cake marzipan. Chocolate cake sweet chocolate bar powder bear claw bonbon biscuit carrot cake apple pie. Caramels jelly-o cheesecake bonbon macaroon.
+    </p>
+    <p>
+      Cupcake croissant bear claw icing. Chocolate bar powder brownie topping. Gingerbread sugar plum gingerbread pastry. Candy faworki dragée wafer chocolate cake cotton candy lollipop icing cake.
+    </p>
+  </div>
+
+
+  <div id="wysiwyg-toolbar">
+    <input type="button" id="wysiwyg-button-bold" value="Bold" />
+    <input type="button" id="wysiwyg-button-italic" value="Italic" />
+    <input type="button" id="wysiwyg-button-underline" value="Underline" />
+    <select id="wysiwyg-button-format">
+      <option value="">Formatage</option>
+      <option value="H1">H1</option>
+      <option value="H2">H2</option>
+      <option value="H3">H3</option>
+      <option value="P">P</option>
+      <option value="PRE">Pre</option>
+      <option value="BLOCKQUOTE">Blockquote</option>
+    </select>
+    <input type="button" id="wysiwyg-button-justifyLeft" value="Justify Left" />
+    <input type="button" id="wysiwyg-button-justifyCenter" value="Justify Center" />
+    <input type="button" id="wysiwyg-button-justifyRight" value="Justify Right" />
+    <input type="button" id="wysiwyg-button-justifyFull" value="Justify Full" />
+    <input type="button" id="wysiwyg-button-unorderedList" value="UnorderedList" />
+    <input type="button" id="wysiwyg-button-orderedList" value="OrderedList" />
+  </div>
+
+  <script type="text/javascript">
+  $(document).ready(function(){
+    $(".editable").each(function(){
+      if(this.nodeName.toUpperCase() == "H1"){
+        new WYSIWYG(this, {toolbar: false, inline: true});
+      }else{
+        new WYSIWYG(this);
+      }
+    });
+  });
+  </script>
+
+</body>
+</html>

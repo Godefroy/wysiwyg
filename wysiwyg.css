@@ -1,0 +1,43 @@
+
+body {
+    width: 960px;
+    margin: 0 auto;
+}
+
+.editable {
+    position: relative;
+    padding: 5px;
+}
+
+.editable:hover {
+    outline-style: solid;
+    outline-width: 3px;
+    outline-color: #E3E3E3;
+}
+
+.editable:focus {
+    outline-style: solid;
+    outline-width: 3px;
+    outline-color: #DCDCDC;
+}
+
+#wysiwyg-toolbar {
+    display: none;
+    position: absolute;
+    background-color: #DCDCDC;
+}
+
+#wysiwyg-toolbar input, #wysiwyg-toolbar select {
+    background-color: #F3F3F3;
+    border: 1px solid #D8D8D8;
+    padding: 3px;
+    cursor: pointer;
+}
+
+#wysiwyg-toolbar input:hover, #wysiwyg-toolbar select:hover {
+    border: 1px solid #A7A7A7;
+}
+
+#wysiwyg-toolbar input.enabled {
+    border: 1px solid #484848;
+}

@@ -1,5 +1,6 @@
 
 (function(jQuery){
+
   var defaultOptions = {
     toolbar: true,
     inline: false
@@ -8,8 +9,35 @@
   var currentEditor;
 
   jQuery(document).ready(function(){
+
+    /* Instanciate a WYSIWWYG on an element or a set of elements
+     * or get instances if already existing
+     *
+     * @example getWYSIWYG(".editable");
+     * @example getWYSIWYG("#editor", {inline: true});
+     * @example getWYSIWYG($("#editor"));
+     *
+     * @param element Selector of jQuery set of elements
+     * @param options Options, overriding defaultOptions
+     */
+    getWYSIWYG = function(elements, options){
+      var instances = [];
+      jQuery(elements).each(function(){
+        var element = jQuery(this);
+        var instance;
+        if(!(instance = element.data("wysiwyg"))){
+          instance = new WYSIWYG(element, options);
+          element.data("wysiwyg", instance);
+        }
+        instances.push(instance);
+      });
+      return instances;
+    };
+
+
     var toolbar = jQuery("#wysiwyg-toolbar").attr("contentEditable", false);
 
+    // Toolbars' buttons list
     var buttons = {
       bold: {
         command: "bold",
@@ -104,9 +132,20 @@
     }
 
 
-    WYSIWYG = function(element, options){
+    /* Constructor
+     *
+     * @example new WYSIWYG(jQuery("#editor"));
+     * @example new WYSIWYG(jQuery("#editor"), {inline: true});
+     *
+     * @param element jQuery single element
+     * @param options Options, overriding defaultOptions
+     */
+    var WYSIWYG = function(element, options){
+      this.element = element;
       this.options = jQuery.extend({}, defaultOptions, options);
-      this.element = jQuery(element).first();
+      this.events = [];
+      this.enabled = false;
+      // Init
       this.enable();
       this._repositionToolbar();
     };
@@ -116,27 +155,38 @@
       /* Enable WYSIWYG on a block
        */
       enable: function(){
-        var that = this;
-        this.element.attr("contentEditable", true);
-        this.element.on("focus", function(event){
-          that._onfocus(event);
-        });
-        this.element.on("blur", function(event){
-          that._onblur(event);
-        });
-        this.element.on("keydown", function(event){
-          that._onkeydown(event);
-        });
-        this.element.on("keydown keyup paste change mouseup", function(event){
-          that._onchange(event);
-        });
+        if(!this.enabled){
+          this.enabled = true;
+          this.element.attr("contentEditable", true);
+          // Container
+          this.container = jQuery("<div></div>")
+            .insertBefore(this.element)
+            .css("position", "relative");
+          this.container.prepend(this.element);
+          // Events
+          this._addEvent(this.element, "focus", this._onfocus);
+          this._addEvent(this.element, "blur", this._onblur);
+          this._addEvent(this.element, "keydown", this._onkeydown);
+          this._addEvent(this.element, "keydown keyup paste change mouseup", this._onchange);
+        }
       },
 
       /* Disable WYSIWYG on a block
        */
       disable: function(){
-        this.element.attr("contentEditable", false);
-        this.element.off("focus blur keydown keyup paste change mouseup");
+        if(this.enabled){
+          this.enabled = false;
+          this._removeEvents();
+          if(currentEditor == this){
+            currentEditor = null;
+            this._toggleToolbar(false);
+            jQuery(document.body).append(toolbar);
+          }
+          this.element.attr("contentEditable", false);
+          // Remove container
+          this.element.insertBefore(this.container);
+          this.container.remove();
+        }
       },
 
       /* Change tag of the block
@@ -153,11 +203,64 @@
        * @param value (optional)
        */
       execute: function(command, value){
+        this.focus();
         document.execCommand(command, false, value);
-        this.element.focus();
         this._refreshButtons();
       },
 
+      /* Set focus on the editor
+       */
+      focus: function(){
+        this.element.focus();
+        if(this.lastSelection){
+          this._restoreRange(this.lastSelection);
+        }
+      },
+
+      /* Add an event on a element or a set of elements
+       *
+       * @param element jQuery set of elements
+       * @param type Event type
+       * @param fn Event function
+       */
+      _addEvent: function(element, type, fn){
+        var that = this;
+        fn = fn.bind(this);
+        element.each(function(){
+          that.events.push({
+            element: this,
+            type: type,
+            fn: fn
+          });
+          jQuery(element).on(type, fn);
+        });
+      },
+
+      /* Remove some events
+       *
+       * @param element jQuery set of elements (optional)
+       * @param type Event type (optional)
+       */
+      _removeEvents: function(elements, type){
+        var that = this;
+        if(!elements){
+          elements = [false];
+        }
+        for(var i = elements.length - 1; i >= 0; i--){
+          var element = elements[i];
+          for(var j = this.events.length - 1; j >= 0; j--){
+            var event = this.events[j];
+            if((!element || event.element == element)
+              && (!type || event.type == type)){
+              jQuery(event.element).off(event.type, event.fn);
+              this.events.splice(j, 1);
+            }
+          }
+        }
+      },
+
+      /* Get range of current selection
+       */
       _getRange: function() {
         var range, userSelection;
         if (jQuery.browser.msie) {
@@ -177,6 +280,17 @@
           }
         }
         return range;
+      },
+
+      /* Restore Range as it was before blur
+       */
+      _restoreRange: function(range) {
+        if (jQuery.browser.msie) {
+          return range.select();
+        } else {
+          window.getSelection().removeAllRanges();
+          return window.getSelection().addRange(range);
+        }
       },
 
       _onchange: function(event){
@@ -205,16 +319,31 @@
 
       _onfocus: function(){
         currentEditor = this;
-        toolbar.css("display", this.options.toolbar ? "block" : "");
+        this._toggleToolbar(this.options.toolbar);
         this._repositionToolbar();
+        // Blur event
+        this._addEvent(jQuery(document.documentElement), "mousedown", function(event){
+          if(!jQuery.contains(this.container.get(0), event.target) && currentEditor == this){
+            this._toggleToolbar(false);
+            this._removeEvents(jQuery(document.documentElement));
+          }
+        });
       },
 
       _onblur: function(event){
-        if(event.target != this.element[0]){
-          toolbar.css("display", "none");
-        }
+        this.lastSelection = this._getRange();
       },
 
+      /* Show / hide toolbar
+       *
+       * @param bool true = show, false = hide
+       */
+      _toggleToolbar: function(bool){
+        toolbar.css("display", bool ? "block" : "none");
+      },
+
+      /* Update buttons state according to the current range
+       */
       _refreshButtons: function(range){
         if(!range){
           range = this._getRange();
@@ -240,9 +369,10 @@
         }
       },
 
+      /* Reposition toolbar in the current editor
+       */
       _repositionToolbar: function(){
-        this.element.prepend(toolbar);
-        toolbar.css("top", (-toolbar.height()) + "px");
+        this.container.prepend(toolbar);
       }
 
     };
@@ -262,5 +392,25 @@
     }
 
   });
+
+  // Function.prototype.bind polyfill
+  if(!Function.prototype.bind){
+
+    Function.prototype.bind = function(obj){
+      if(typeof this !== 'function') // closest thing possible to the ECMAScript 5 internal IsCallable function
+        throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+
+      var slice = [].slice,
+          args = slice.call(arguments, 1),
+          self = this,
+          nop = function(){},
+          bound = function(){
+            return self.apply(this instanceof nop ? this : (obj || {}),
+                              args.concat( slice.call(arguments)));
+          };
+      bound.prototype = this.prototype;
+      return bound;
+    };
+  }
 
 })(jQuery);

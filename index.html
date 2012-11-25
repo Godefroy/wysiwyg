@@ -38,7 +38,7 @@
     <input type="button" id="wysiwyg-button-italic" value="Italic" />
     <input type="button" id="wysiwyg-button-underline" value="Underline" />
     <select id="wysiwyg-button-format">
-      <option value="">Formatage</option>
+      <option value="">Format</option>
       <option value="H1">H1</option>
       <option value="H2">H2</option>
       <option value="H3">H3</option>
@@ -54,13 +54,20 @@
     <input type="button" id="wysiwyg-button-orderedList" value="OrderedList" />
   </div>
 
+  <input type="button" id="toggleEditors" value="Toggle editors" />
+
   <script type="text/javascript">
   $(document).ready(function(){
-    $(".editable").each(function(){
-      if(this.nodeName.toUpperCase() == "H1"){
-        new WYSIWYG(this, {toolbar: false, inline: true});
-      }else{
-        new WYSIWYG(this);
+    getWYSIWYG("h1", {toolbar: false, inline: true});
+    getWYSIWYG("div.editable");
+
+    // Toggle button
+    var enabled = true;
+    $("#toggleEditors").on("click", function(){
+      enabled = !enabled;
+      var editors = getWYSIWYG(".editable");
+      for(var i = editors.length - 1; i >= 0; i--){
+        editors[i][enabled ? "enable" : "disable"]();
       }
     });
   });

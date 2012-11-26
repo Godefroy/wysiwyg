@@ -22,8 +22,8 @@ body {
 #wysiwyg-toolbar {
     display: none;
     position: absolute;
-    top: -48px;
-    left: -8px;
+    margin-top: -37px;
+    margin-left: -8px;
     padding: 1px;
     background-color: #DCDCDC;
     cursor: default;

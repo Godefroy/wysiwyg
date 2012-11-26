@@ -264,11 +264,6 @@
         if(!this.enabled){
           this.enabled = true;
           this.element.attr("contentEditable", true);
-          // Container
-          this.container = jQuery("<div></div>")
-            .insertBefore(this.element)
-            .css("position", "relative");
-          this.container.prepend(this.element);
           // Events
           this._addEvent(this.element, "focus", this._onfocus);
           this._addEvent(this.element, "blur", this._onblur);
@@ -289,9 +284,6 @@
             jQuery(document.body).append(toolbar);
           }
           this.element.attr("contentEditable", false);
-          // Remove container
-          this.element.insertBefore(this.container);
-          this.container.remove();
         }
       },
 
@@ -464,7 +456,11 @@
         this._repositionToolbar();
         // Blur event
         this._addEvent(jQuery(document.documentElement), "mousedown", function(event){
-          if(!jQuery.contains(this.container.get(0), event.target) && currentEditor == this){
+          if(!jQuery.contains(this.element.get(0), event.target)
+            && !jQuery.contains(toolbar.get(0), event.target)
+            && this.element.get(0) != event.target
+            && toolbar.get(0) != event.target
+            && currentEditor == this){
             this._toggleToolbar(false);
             this._removeEvents(jQuery(document.documentElement));
           }
@@ -513,7 +509,8 @@
       /* Reposition toolbar in the current editor
        */
       _repositionToolbar: function(){
-        this.container.prepend(toolbar);
+        this.element.before(toolbar);
+        toolbar.css(this.element.offset());
       }
 
     };

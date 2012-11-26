@@ -43,3 +43,12 @@ body {
 #wysiwyg-toolbar input.enabled {
     border: 1px solid #484848;
 }
+
+.wysiwyg-modal {
+    display: none;
+    position: absolute;
+    z-index: 10;
+}
+.wysiwyg-modal form {
+    margin: 0;
+}

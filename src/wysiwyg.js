@@ -67,6 +67,74 @@
           return /^(S|STRIKE|DEL)$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-decoration") == "line-through";
         }
       },
+
+      link: {
+        element: jQuery("#wysiwyg-button-link"),
+        init: function(){
+          var modal = jQuery("#wysiwyg-modal-link");
+          var input = modal.find("input[type=text]");
+          var form = modal.find("form");
+          var deleteBtn = jQuery("#wysiwyg-modal-link-delete");
+          this.element.on("click", function(){
+            var range = currentEditor._getRange();
+            var emptyRange = currentEditor._isEmptyRange(range);
+
+            // If a link already exists, fill the form
+            var node = jQuery(range.startContainer);
+            var existingLink;
+            input.attr("value", "");
+            if(!node.nodeName){
+              node = node.parent();
+            }
+            jQuery.merge(node, node.parentsUntil(currentEditor.element)).each(function(){
+              if(this.nodeName.toUpperCase() == "A"){
+                input.attr("value", this.getAttribute("href"));
+                existingLink = this;
+                return false;
+              }
+            });
+
+            if(existingLink || !emptyRange){
+              var position = currentEditor._getCaretPosition(range);
+              modal.show().css({
+                top: position.top - modal.height(),
+                left: position.left
+              });
+              input.focus();
+              deleteBtn.toggle(!!existingLink).on("click", function(){
+                if(emptyRange){
+                  jQuery(existingLink).contents().each(function(){
+                    jQuery(this).insertBefore(existingLink);
+                  });
+                  jQuery(existingLink).remove();
+                }else{
+                  currentEditor.execute("unlink");
+                }
+                modal.hide();
+              });
+              form.off("submit");
+              form.on("submit", function(){
+                var url = input.attr("value");
+                if(emptyRange){
+                  if(url == ""){
+                    currentEditor.execute("unlink");
+                  }else{
+                    existingLink.href = url;
+                  }
+                }else{
+                  currentEditor.execute("unlink");
+                  currentEditor.execute("createLink", url);
+                }
+                modal.hide();
+              });
+            }
+          });
+        },
+        testNode: function(node){
+          return /^A$/.test(node.prop("nodeName").toUpperCase());
+        }
+      },
+
       // Format: <select> button
       format: {
         element: jQuery("#wysiwyg-button-format"),
@@ -77,6 +145,7 @@
           });
         }
       },
+
       // Format: Separate buttons
       formatBtns: {
         element: jQuery(".wysiwyg-button-format"),
@@ -106,6 +175,7 @@
           });
         }
       },
+
       justifyLeft: {
         command: "justifyLeft",
         element: jQuery("#wysiwyg-button-justifyLeft"),
@@ -134,6 +204,7 @@
           return node.css("text-align") == "justify";
         }
       },
+
       unorderedList: {
         command: "insertUnorderedList",
         element: jQuery("#wysiwyg-button-unorderedList"),
@@ -148,6 +219,7 @@
           return /^OL$/.test(node.prop("nodeName").toUpperCase());
         }
       }
+
     };
 
     for(var buttonName in buttons){
@@ -320,6 +392,8 @@
       },
 
       /* Restore Range as it was before blur
+       *
+       * @param range Range
        */
       _restoreRange: function(range) {
         if (jQuery.browser.msie) {
@@ -330,9 +404,42 @@
         }
       },
 
+      /* True if the range is empty
+       *
+       * @param range Range
+       */
+      _isEmptyRange: function(range) {
+        if (range.collapsed) {
+          return true;
+        }
+        if (range.isCollapsed) {
+          if (typeof range.isCollapsed === 'function') {
+            return range.isCollapsed();
+          }
+          return range.isCollapsed;
+        }
+        return false;
+      },
+
+      /* Get current position (top & left) of the caret
+       *
+       * @param range Range
+       */
+      _getCaretPosition: function(range) {
+        var newRange, position, tmpSpan;
+        tmpSpan = jQuery("<span/>");
+        newRange = document.createRange();
+        newRange.setStart(range.startContainer, range.startOffset);
+        newRange.insertNode(tmpSpan.get(0));
+        position = tmpSpan.offset();
+        tmpSpan.remove();
+        return position;
+      },
+
       _onchange: function(event){
         var range = this._getRange();
         this._refreshButtons(range);
+        jQuery(".wysiwyg-modal").hide();
       },
 
       _onkeydown: function(event){
@@ -376,7 +483,7 @@
        * @param bool true = show, false = hide
        */
       _toggleToolbar: function(bool){
-        toolbar.css("display", bool ? "block" : "none");
+        toolbar.toggle(bool);
       },
 
       /* Update buttons state according to the current range

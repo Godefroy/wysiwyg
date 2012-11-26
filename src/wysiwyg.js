@@ -57,7 +57,14 @@
         command: "underline",
         element: jQuery("#wysiwyg-button-underline"),
         testNode: function(node){
-          return /^U$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-decoration") == "underline";
+          return /^(U|INS)$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-decoration") == "underline";
+        }
+      },
+      strikeThrough: {
+        command: "strikeThrough",
+        element: jQuery("#wysiwyg-button-strikeThrough"),
+        testNode: function(node){
+          return /^(S|STRIKE|DEL)$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-decoration") == "line-through";
         }
       },
       // Format: <select> button

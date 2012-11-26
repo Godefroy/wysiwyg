@@ -103,10 +103,7 @@
               input.focus();
               deleteBtn.toggle(!!existingLink).on("click", function(){
                 if(emptyRange){
-                  jQuery(existingLink).contents().each(function(){
-                    jQuery(this).insertBefore(existingLink);
-                  });
-                  jQuery(existingLink).remove();
+                  jQuery(existingLink).replaceWith(jQuery(existingLink).contents());
                 }else{
                   currentEditor.execute("unlink");
                 }

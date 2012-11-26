@@ -1,0 +1,46 @@
+
+body {
+    width: 960px;
+    margin: 0 auto;
+    font-family: Helvetica, sans-serif;
+    font-size: 15px;
+    line-height: 1.5em;
+}
+
+.editable {
+    outline-width: 3px;
+    outline-offset: 5px;
+}
+
+.editable:hover {
+    outline-style: solid;
+    outline-color: #E9E9E9;
+}
+
+.editable:focus {
+    outline-style: solid;
+    outline-color: #DCDCDC;
+}
+
+#wysiwyg-toolbar {
+    display: none;
+    position: absolute;
+    top: -35px;
+    background-color: #DCDCDC;
+    cursor: default;
+}
+
+#wysiwyg-toolbar input, #wysiwyg-toolbar select {
+    background-color: #F3F3F3;
+    border: 1px solid #D8D8D8;
+    padding: 3px;
+    cursor: pointer;
+}
+
+#wysiwyg-toolbar input:hover, #wysiwyg-toolbar select:hover {
+    border: 1px solid #A7A7A7;
+}
+
+#wysiwyg-toolbar input.active {
+    border: 1px solid #484848;
+}

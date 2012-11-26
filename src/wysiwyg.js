@@ -60,12 +60,42 @@
           return /^U$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-decoration") == "underline";
         }
       },
+      // Format: <select> button
       format: {
         element: jQuery("#wysiwyg-button-format"),
         init: function(){
           this.element.on("change", function(){
             currentEditor.formatBlock(this.value);
             this.value = "";
+          });
+        }
+      },
+      // Format: Separate buttons
+      formatBtns: {
+        element: jQuery(".wysiwyg-button-format"),
+        init: function(){
+          this.element.each(function(){
+            var element = jQuery(this);
+            element.on("click", function(){
+              currentEditor.formatBlock(element.data("format"));
+            });
+          });
+        },
+        testNode: function(node){
+          var m = node.prop("nodeName").toUpperCase().match(/^(H[1-6]|P|PRE|BLOCKQUOTE)$/);
+          if(m){
+            this.value = m[1];
+            return true;
+          }else{
+            delete this.value;
+            return false;
+          }
+        },
+        toggle: function(bool){
+          var value = this.value;
+          this.element.each(function(){
+            var element = jQuery(this);
+            element.parent().toggleClass("active", element.data("format") == value);
           });
         }
       },
@@ -125,7 +155,7 @@
         }
         if(!button.toggle){
           button.toggle = function(bool){
-            this.element.toggleClass("enabled", bool);
+            this.element.toggleClass("active", bool);
           };
         }
       })();

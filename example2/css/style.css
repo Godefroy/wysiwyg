@@ -2,9 +2,6 @@
 body {
     width: 960px;
     margin: 0 auto;
-    font-family: Helvetica, sans-serif;
-    font-size: 15px;
-    line-height: 1.5em;
 }
 
 .editable {
@@ -25,7 +22,9 @@ body {
 #wysiwyg-toolbar {
     display: none;
     position: absolute;
-    top: -35px;
+    top: -48px;
+    left: -8px;
+    padding: 1px;
     background-color: #DCDCDC;
     cursor: default;
 }

@@ -36,8 +36,11 @@
       return instances;
     };
 
-
+    // Tool bar
     var toolbar = jQuery("#wysiwyg-toolbar").attr("contentEditable", false);
+
+    // List of elements used by WYSIWYG
+    var toolElements = [toolbar];
 
     // Tags that are blocks
     var blockTags = "h[1-6]|p|pre|blockquote|div|ul|ol|li";
@@ -109,6 +112,7 @@
         rules: {tags: "a"},
         init: function(){
           var modal = jQuery("#wysiwyg-modal-link");
+          toolElements.push(modal);
           var input = modal.find("input[type=text]");
           var form = modal.find("form");
           var deleteBtn = jQuery("#wysiwyg-modal-link-delete");
@@ -403,6 +407,8 @@
         }
       },
 
+      /* Clean up the code
+       */
       cleanup: function(){
         if(this.options.raw){
           this.element.text(this.element.text());
@@ -636,10 +642,14 @@
           this._blurEventDefined = true;
           var documentElement = jQuery(document.documentElement);
           this._addEvent(documentElement, "mousedown", function(event){
+            for(var i = toolElements.length-1; i >= 0; i--){
+              if(jQuery.contains(toolElements[i].get(0), event.target)
+                || toolElements[i].get(0) == event.target){
+                return;
+              }
+            }
             if(!jQuery.contains(this.element.get(0), event.target)
-              && !jQuery.contains(toolbar.get(0), event.target)
               && this.element.get(0) != event.target
-              && toolbar.get(0) != event.target
               && currentEditor == this){
               this._toggleToolbar(false);
               this._blurEventDefined = false;

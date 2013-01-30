@@ -3,7 +3,9 @@
 
   var defaultOptions = {
     toolbar: true,
-    inline: false
+    inline: false,
+    cleanup: true,
+    raw: false
   };
 
   var currentEditor;
@@ -37,45 +39,80 @@
 
     var toolbar = jQuery("#wysiwyg-toolbar").attr("contentEditable", false);
 
+    // Tags that are blocks
+    var blockTags = "h[1-6]|p|pre|blockquote|div|ul|ol|li";
+
     // Toolbars' buttons list
-    var buttons = {
+    var formattings = {
+
+      /** Example:
+      formatName: {
+        command: "commandName",
+        button: jQuery("#toolbar-button"),  // Button in the toolbar
+        preferred: {  // Configuration to create a tag corresponding to the formatting
+          tag: "tagName",     // If defined, use this tagName
+          style: "property: value;",      // If defined, apply these styles
+          keepAttrs: ["attr1", "attr2"],  // If defined, keep these attributes
+          onlyIfBlock: true,  // If true, keep the format style only if the tag is a block
+          keepTag: true       // If true, keep the current tag (whatever it is) and delete its attributes
+        },
+        rules: {  // Configuration to detect a tag corresponding to the formatting
+          tags: "tagName1|tagName2|...",           // tagName matching
+          style: ["property1": "value1|value2"],   // styles matching
+        }
+      }
+      */
+
       bold: {
         command: "bold",
-        element: jQuery("#wysiwyg-button-bold"),
-        testNode: function(node){
-          return /^(STRONG|B)$/.test(node.prop("nodeName").toUpperCase()) || /^(bold|700)$/.test(node.css("font-weight"));
+        button: jQuery("#wysiwyg-button-bold"),
+        preferred: {tag: "strong"},
+        rules: {
+          tags: "strong|b",
+          style: ["font-weight", "bold|700"]
         }
       },
       italic: {
         command: "italic",
-        element: jQuery("#wysiwyg-button-italic"),
-        testNode: function(node){
-          return /^(EM|I)$/.test(node.prop("nodeName").toUpperCase()) || node.css("font-style") == "italic";
+        button: jQuery("#wysiwyg-button-italic"),
+        preferred: {tag: "em"},
+        rules: {
+          tags: "em|i",
+          style: ["font-style", "italic"]
         }
       },
       underline: {
         command: "underline",
-        element: jQuery("#wysiwyg-button-underline"),
-        testNode: function(node){
-          return /^(U|INS)$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-decoration") == "underline";
+        button: jQuery("#wysiwyg-button-underline"),
+        preferred: {style: "text-decoration: underline;"},
+        rules: {
+          tags: "u|ins",
+          style: ["text-decoration", "underline"]
         }
       },
       strikeThrough: {
         command: "strikeThrough",
-        element: jQuery("#wysiwyg-button-strikeThrough"),
-        testNode: function(node){
-          return /^(S|STRIKE|DEL)$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-decoration") == "line-through";
+        button: jQuery("#wysiwyg-button-strikeThrough"),
+        preferred: {style: "text-decoration: line-through;"},
+        rules: {
+          tags: "s|strike|del",
+          style: ["text-decoration", "line-through"]
         }
       },
 
       link: {
-        element: jQuery("#wysiwyg-button-link"),
+        button: jQuery("#wysiwyg-button-link"),
+        preferred: {
+          tag: "a",
+          keepAttrs: ["href"]
+        },
+        rules: {tags: "a"},
         init: function(){
           var modal = jQuery("#wysiwyg-modal-link");
           var input = modal.find("input[type=text]");
           var form = modal.find("form");
           var deleteBtn = jQuery("#wysiwyg-modal-link-delete");
-          this.element.on("click", function(){
+          this.button.on("click", function(){
             var range = currentEditor._getRange();
             var emptyRange = currentEditor._isEmptyRange(range);
 
@@ -126,17 +163,18 @@
               });
             }
           });
-        },
-        testNode: function(node){
-          return /^A$/.test(node.prop("nodeName").toUpperCase());
         }
       },
 
       // Format: <select> button
       format: {
-        element: jQuery("#wysiwyg-button-format"),
+        button: jQuery("#wysiwyg-button-format"),
+        preferred: {keepTag: true},
+        rules: {
+          tags: "h[1-6]|p|pre|blockquote"
+        },
         init: function(){
-          this.element.on("change", function(){
+          this.button.on("change", function(){
             currentEditor.formatBlock(this.value);
             this.value = "";
           });
@@ -145,93 +183,141 @@
 
       // Format: Separate buttons
       formatBtns: {
-        element: jQuery(".wysiwyg-button-format"),
-        init: function(){
-          this.element.each(function(){
-            var element = jQuery(this);
-            element.on("click", function(){
-              currentEditor.formatBlock(element.data("format"));
-            });
-          });
+        button: jQuery(".wysiwyg-button-format"),
+        rules: {
+          tags: "h[1-6]|p|pre|blockquote"
         },
-        testNode: function(node){
-          var m = node.prop("nodeName").toUpperCase().match(/^(H[1-6]|P|PRE|BLOCKQUOTE)$/);
-          if(m){
-            this.value = m[1];
-            return true;
+        init: function(){
+          if(this.button.first().prop("nodeName") == "SELECT"){
+            this.button.on("change", function(){
+              currentEditor.formatBlock(this.value);
+              this.value = "";
+            });
+
           }else{
-            delete this.value;
-            return false;
+            this.button.each(function(){
+              var button = jQuery(this);
+              button.on("click", function(){
+                currentEditor.formatBlock(button.data("format"));
+              });
+            });
+            this.testNode = function(node){
+              var m = node.prop("nodeName").toLowerCase().match(new RegExp("^("+this.rules.tags+")$"));
+              if(m){
+                this.value = m[1];
+              }else{
+                delete this.value;
+              }
+              return !!m;
+            };
+            this.toggle = function(bool){
+              var value = this.value;
+              this.button.each(function(){
+                var button = jQuery(this);
+                button.parent().toggleClass("active", button.data("format") == value);
+              });
+            };
           }
         },
-        toggle: function(bool){
-          var value = this.value;
-          this.element.each(function(){
-            var element = jQuery(this);
-            element.parent().toggleClass("active", element.data("format") == value);
-          });
-        }
       },
 
       justifyLeft: {
         command: "justifyLeft",
-        element: jQuery("#wysiwyg-button-justifyLeft"),
-        testNode: function(node){
-          return node.css("text-align") == "left";
+        button: jQuery("#wysiwyg-button-justifyLeft"),
+        preferred: {
+          style: "text-align: left;",
+          onlyIfBlock: true
+        },
+        rules: {
+          style: ["text-align", "left"]
         }
       },
       justifyCenter: {
         command: "justifyCenter",
-        element: jQuery("#wysiwyg-button-justifyCenter"),
-        testNode: function(node){
-          return /^CENTER$/.test(node.prop("nodeName").toUpperCase()) || node.css("text-align") == "center";
+        button: jQuery("#wysiwyg-button-justifyCenter"),
+        preferred: {
+          style: "text-align: center;",
+          onlyIfBlock: true
+        },
+        rules: {
+          tags: "center",
+          style: ["text-align", "center"]
         }
       },
       justifyRight: {
         command: "justifyRight",
-        element: jQuery("#wysiwyg-button-justifyRight"),
-        testNode: function(node){
-          return node.css("text-align") == "right";
+        button: jQuery("#wysiwyg-button-justifyRight"),
+        preferred: {
+          style: "text-align: right;",
+          onlyIfBlock: true
+        },
+        rules: {
+          style: ["text-align", "right"]
         }
       },
       justifyFull: {
         command: "justifyFull",
-        element: jQuery("#wysiwyg-button-justifyFull"),
-        testNode: function(node){
-          return node.css("text-align") == "justify";
+        button: jQuery("#wysiwyg-button-justifyFull"),
+        preferred: {
+          style: "text-align: justify;", 
+          onlyIfBlock: true
+        },
+        rules: {
+          style: ["text-align", "justify"]
         }
       },
 
       unorderedList: {
         command: "insertUnorderedList",
-        element: jQuery("#wysiwyg-button-unorderedList"),
-        testNode: function(node){
-          return /^UL$/.test(node.prop("nodeName").toUpperCase());
-        }
+        button: jQuery("#wysiwyg-button-unorderedList"),
+        preferred: {tag: "ul"},
+        rules: {tags: "ul"}
       },
       orderedList: {
         command: "insertOrderedList",
-        element: jQuery("#wysiwyg-button-orderedList"),
-        testNode: function(node){
-          return /^OL$/.test(node.prop("nodeName").toUpperCase());
-        }
+        button: jQuery("#wysiwyg-button-orderedList"),
+        preferred: {tag: "ol"},
+        rules: {tags: "ol"}
+      },
+      listItem: {
+        preferred: {tag: "li"},
+        rules: {tags: "li"}
+      },
+
+      div: {
+        preferred: {tag: "p"},
+        rules: {tags: "div"}
       }
 
     };
 
-    for(var buttonName in buttons){
+    var authorized_styles = [];
+
+    for(var formattingName in formattings){
       (function(){
-        var button = buttons[buttonName];
-        if(button.init){
-          button.init();
-        }else{
-          button.element.on("click", function(){
-            currentEditor.execute(button.command);
+        var formatting = formattings[formattingName];
+        if(formatting.init){
+          formatting.init();
+        }else if(formatting.button){
+          formatting.button.on("click", function(){
+            currentEditor.execute(formatting.command);
           });
         }
-        if(!button.toggle){
-          button.toggle = function(bool){
-            this.element.toggleClass("active", bool);
+        if(formatting.rules.style){
+          authorized_styles.push(formatting.rules.style);
+        }
+        if(!formatting.testNode){
+          formatting.testNode = function(node){
+            return (typeof(this.rules.tags) != "undefined"
+                    && new RegExp("^("+this.rules.tags+")$").test(node.prop("nodeName").toLowerCase()))
+                || (typeof(this.rules.style) != "undefined"
+                    && typeof(node.attr("style")) != "undefined"
+                    && new RegExp("(^|\\s|;)"+this.rules.style[0]+" *: *("+this.rules.style[1]+")[;\\s]").test(node.attr("style")));
+          };
+        }
+        if(!formatting.toggle && formatting.button){
+          formatting.toggle = function(bool){
+            this.button.toggleClass("active", bool);
           };
         }
       })();
@@ -251,6 +337,7 @@
       this.options = jQuery.extend({}, defaultOptions, options);
       this.events = [];
       this.enabled = false;
+      this._blurEventDefined = false;
       // Init
       this.enable();
       this._repositionToolbar();
@@ -277,6 +364,7 @@
       disable: function(){
         if(this.enabled){
           this.enabled = false;
+          this._blurEventDefined = false;
           this._removeEvents();
           if(currentEditor == this){
             currentEditor = null;
@@ -315,13 +403,102 @@
         }
       },
 
+      cleanup: function(){
+        if(this.options.raw){
+          this.element.text(this.element.text());
+          return;
+        }
+
+        var nodes = this.element/*.contents().detach()*/.find("*").each(function(){
+          var node = jQuery(this);
+
+          // If empty, delete node
+          if(node.html() == ""){
+            node.remove();
+            return;
+          }
+
+          var nodeName = node.prop("nodeName").toLowerCase();
+          var replacement_tags = [];
+          var replacement_styles = "";
+          var replacement_block_styles = "";
+          var hasBlock = false;
+
+          for(var formattingName in formattings){
+            var formatting = formattings[formattingName];
+            if(formatting.preferred && formatting.testNode(node)){
+              var preferredTagName = false;
+              // Do we use a predefined tag?
+              if(formatting.preferred.tag){
+                preferredTagName = formatting.preferred.tag;
+              // Or do we keep the current tag?
+              }else if(formatting.preferred.keepTag){
+                preferredTagName = nodeName;
+              }
+
+              if(preferredTagName){
+                var preferredTag = jQuery("<"+preferredTagName+"></"+preferredTagName+">");
+
+                // Keeping some attributes?
+                if(formatting.preferred.keepAttrs){
+                  for(var i = formatting.preferred.keepAttrs.length - 1; i >= 0; i--){
+                    var attr = node.attr(formatting.preferred.keepAttrs[i]);
+                    if(attr){
+                      preferredTag.attr(formatting.preferred.keepAttrs[i], attr);
+                    }
+                  }
+                }
+
+                // Blocks are inserted before other nodes
+                if(new RegExp("^("+blockTags+")$").test(preferredTagName)){
+                  replacement_tags.unshift(preferredTag);
+                  hasBlock = true;
+                }else{
+                  replacement_tags.push(preferredTag);
+                }
+              }
+
+              // Style to be applied?
+              if(formatting.preferred.style){
+                if(formatting.preferred.onlyIfBlock){
+                  replacement_block_styles += formatting.preferred.style;
+                }else{
+                  replacement_styles += formatting.preferred.style;
+                }
+              }
+
+            }
+          }
+
+          if(!replacement_tags[0] && replacement_styles != ""){
+            replacement_tags[0] = jQuery("<span></span>");
+          }
+          if(replacement_tags[0]){
+            var prevNode = replacement_tags[0].insertBefore(node);
+            if(replacement_block_styles != "" && hasBlock){
+              replacement_styles += replacement_block_styles;
+            }
+            if(replacement_styles != ""){
+              prevNode.attr("style", replacement_styles);
+            }
+            for(var i = 1; i < replacement_tags.length; i++){
+              prevNode = replacement_tags[i].appendTo(prevNode);
+            }
+            prevNode.append(node.contents());
+          }else{
+            node.contents().insertBefore(node);
+          }
+          node.remove();
+        })/*.appendTo(this.element)*/;
+      },
+
       /* Add an event on a element or a set of elements
        *
        * @param element jQuery set of elements
        * @param type Event type
        * @param fn Event function
        */
-      _addEvent: function(element, type, fn){
+      _addEvent: function(element, type, fn, single){
         var that = this;
         fn = fn.bind(this);
         element.each(function(){
@@ -455,16 +632,24 @@
         this._toggleToolbar(this.options.toolbar);
         this._repositionToolbar();
         // Blur event
-        this._addEvent(jQuery(document.documentElement), "mousedown", function(event){
-          if(!jQuery.contains(this.element.get(0), event.target)
-            && !jQuery.contains(toolbar.get(0), event.target)
-            && this.element.get(0) != event.target
-            && toolbar.get(0) != event.target
-            && currentEditor == this){
-            this._toggleToolbar(false);
-            this._removeEvents(jQuery(document.documentElement));
-          }
-        });
+        if(!this._blurEventDefined){
+          this._blurEventDefined = true;
+          var documentElement = jQuery(document.documentElement);
+          this._addEvent(documentElement, "mousedown", function(event){
+            if(!jQuery.contains(this.element.get(0), event.target)
+              && !jQuery.contains(toolbar.get(0), event.target)
+              && this.element.get(0) != event.target
+              && toolbar.get(0) != event.target
+              && currentEditor == this){
+              this._toggleToolbar(false);
+              this._blurEventDefined = false;
+              this._removeEvents(documentElement, "mousedown");
+              if(this.options.cleanup){
+                this.cleanup();
+              }
+            }
+          });
+        }
       },
 
       _onblur: function(event){
@@ -492,16 +677,18 @@
             node = node.parent();
           }
           jQuery.merge(node, node.parentsUntil(this.element)).each(function(){
-            for(var buttonName in buttons){
-              var button = buttons[buttonName];
-              if(buttonsStates[buttonName] || !button.testNode)
-                continue;
-              buttonsStates[buttonName] = button.testNode(jQuery(this));
+            for(var formattingName in formattings){
+              var formatting = formattings[formattingName];
+              if(!buttonsStates[formattingName] && formatting.testNode){
+                buttonsStates[formattingName] = formatting.testNode(jQuery(this));
+              }
             }
           });
-          for(var buttonName in buttonsStates){
-            var button = buttons[buttonName];
-            button.toggle(buttonsStates[buttonName]);
+          for(var formattingName in buttonsStates){
+            var formatting = formattings[formattingName];
+            if(formatting.toggle){
+              formatting.toggle(buttonsStates[formattingName]);
+            }
           }
         }
       },

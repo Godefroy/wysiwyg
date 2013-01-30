@@ -360,6 +360,11 @@
           this._addEvent(this.element, "blur", this._onblur);
           this._addEvent(this.element, "keydown", this._onkeydown);
           this._addEvent(this.element, "keydown keyup paste change mouseup", this._onchange);
+          this._addEvent(this.element, "paste", function(){
+            setTimeout(function(){
+              currentEditor.cleanup();
+            }, 0);
+          });
         }
       },
 

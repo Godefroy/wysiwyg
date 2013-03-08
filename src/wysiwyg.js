@@ -391,6 +391,22 @@
       },
 
       /**
+       * Get HTML value of WYWISYG
+       * @return string HTML
+       */
+      getHTML: function(){
+        return this.element.html();
+      },
+
+      /**
+       * Get Text value of WYWISYG
+       * @return string Text
+       */
+      getText: function(){
+        return this.element.text();
+      },
+
+      /**
        * Change tag of the block
        *
        * @param string tagName h1, h2, h3, p, pre, blockquote

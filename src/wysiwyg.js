@@ -819,3 +819,9 @@
   }
 
 })(jQuery);
+
+// Callback when the script is loaded
+if(window.WYSIWYG_callback){
+  window.WYSIWYG_callback();
+  delete window.WYSIWYG_callback;
+}

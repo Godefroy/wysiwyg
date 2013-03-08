@@ -12,15 +12,17 @@
 
   jQuery(document).ready(function(){
 
-    /* Instanciate a WYSIWWYG on an element or a set of elements
+    /**
+     * Instanciate a WYSIWWYG on an element or a set of elements
      * or get instances if already existing
      *
      * @example getWYSIWYG(".editable");
      * @example getWYSIWYG("#editor", {inline: true});
      * @example getWYSIWYG($("#editor"));
      *
-     * @param element Selector of jQuery set of elements
-     * @param options Options, overriding defaultOptions
+     * @param string|jQuery element Selector of jQuery set of elements
+     * @param object        options Options, overriding defaultOptions
+     * @return array WYSIWYG instances
      */
     getWYSIWYG = function(elements, options){
       var instances = [];
@@ -328,13 +330,14 @@
     }
 
 
-    /* Constructor
+    /**
+     * Constructor
      *
      * @example new WYSIWYG(jQuery("#editor"));
      * @example new WYSIWYG(jQuery("#editor"), {inline: true});
      *
-     * @param element jQuery single element
-     * @param options Options, overriding defaultOptions
+     * @param jQuery element  jQuery single element
+     * @param object options  Options overriding defaultOptions
      */
     var WYSIWYG = function(element, options){
       this.element = element;
@@ -350,7 +353,8 @@
 
     WYSIWYG.prototype = {
 
-      /* Enable WYSIWYG on a block
+      /**
+       * Enable WYSIWYG on a block
        */
       enable: function(){
         if(!this.enabled){
@@ -369,7 +373,8 @@
         }
       },
 
-      /* Disable WYSIWYG on a block
+      /**
+       * Disable WYSIWYG on a block
        */
       disable: function(){
         if(this.enabled){
@@ -385,18 +390,20 @@
         }
       },
 
-      /* Change tag of the block
+      /**
+       * Change tag of the block
        *
-       * @param tagName h1, h2, h3, p, pre, blockquote
+       * @param string tagName h1, h2, h3, p, pre, blockquote
        */
       formatBlock: function(tagName){
         this.execute("formatBlock", tagName);
       },
 
-      /* Execute a command
+      /**
+       * Execute a command
        *
-       * @param command
-       * @param value (optional)
+       * @param string command
+       * @param string value (optional)
        */
       execute: function(command, value){
         this.focus();
@@ -404,7 +411,8 @@
         this._refreshButtons();
       },
 
-      /* Set focus on the editor
+      /**
+       * Set focus on the editor
        */
       focus: function(){
         this.element.focus();
@@ -413,7 +421,8 @@
         }
       },
 
-      /* Clean up the code
+      /**
+       * Clean up the code
        */
       cleanup: function(){
         if(this.options.raw){
@@ -504,15 +513,32 @@
         })/*.appendTo(this.element)*/;
       },
 
+      /**
+       * Assign a function to a WYSIWYG event
+       *
+       * @param string   eventName
+       * @param Function
+       */
       on: function(eventName, fn){
         this.instanceEvents.on(eventName, fn);
       },
 
-      /* Add an event on a element or a set of elements
+      /**
+       * Unassign a function to a WYSIWYG event
        *
-       * @param element jQuery set of elements
-       * @param type Event type
-       * @param fn Event function
+       * @param string   eventName
+       * @param Function (optional)
+       */
+      off: function(eventName, fn){
+        this.instanceEvents.off(eventName, fn);
+      },
+
+      /**
+       * Add an event on a element or a set of elements
+       *
+       * @param jQuery   element Set of elements
+       * @param string   type    Event type
+       * @param Function fn      Event function
        */
       _addEvent: function(element, type, fn, single){
         var that = this;
@@ -527,10 +553,11 @@
         });
       },
 
-      /* Remove some events
+      /**
+       * Remove some events
        *
-       * @param element jQuery set of elements (optional)
-       * @param type Event type (optional)
+       * @param jQuery element Set of elements (optional)
+       * @param string type    Event type (optional)
        */
       _removeEvents: function(elements, type){
         var that = this;
@@ -550,7 +577,10 @@
         }
       },
 
-      /* Get range of current selection
+      /**
+       * Get range of current selection
+       *
+       * @return Range
        */
       _getRange: function() {
         var range, userSelection;
@@ -573,22 +603,25 @@
         return range;
       },
 
-      /* Restore Range as it was before blur
+      /**
+       * Restore Range as it was before blur
        *
-       * @param range Range
+       * @param Range range
        */
       _restoreRange: function(range) {
         if (jQuery.browser.msie) {
-          return range.select();
+          range.select();
         } else {
           window.getSelection().removeAllRanges();
-          return window.getSelection().addRange(range);
+          window.getSelection().addRange(range);
         }
       },
 
-      /* True if the range is empty
+      /**
+       * True if the range is empty
        *
-       * @param range Range
+       * @param  Range range
+       * @return boolean
        */
       _isEmptyRange: function(range) {
         if (range.collapsed) {
@@ -603,9 +636,11 @@
         return false;
       },
 
-      /* Get current position (top & left) of the caret
+      /**
+       * Get current position (top & left) of the caret
        *
-       * @param range Range
+       * @param  Range  range
+       * @return object {top: <top offset>, left: <left offset>}
        */
       _getCaretPosition: function(range) {
         var newRange, position, tmpSpan;
@@ -618,6 +653,11 @@
         return position;
       },
 
+      /**
+       * Triggered when a change occurs in the editable element
+       *
+       * @param  Event event
+       */
       _onchange: function(event){
         var range = this._getRange();
         this._refreshButtons(range);
@@ -625,6 +665,11 @@
         this.instanceEvents.trigger("change");
       },
 
+      /**
+       * Triggered when a key is pressed down in the editable element
+       *
+       * @param  Event event
+       */
       _onkeydown: function(event){
         var range = this._getRange();
 
@@ -644,6 +689,9 @@
         }
       },
 
+      /**
+       * Triggered when the editable element get focus
+       */
       _onfocus: function(){
         currentEditor = this;
         this._toggleToolbar(this.options.toolbar);
@@ -676,19 +724,26 @@
         }
       },
 
+      /**
+       * Triggered when the editable element lose focus
+       */
       _onblur: function(event){
         this.lastSelection = this._getRange();
       },
 
-      /* Show / hide toolbar
+      /**
+       * Show / hide toolbar
        *
-       * @param bool true = show, false = hide
+       * @param boolean bool true = show, false = hide
        */
       _toggleToolbar: function(bool){
         toolbar.toggle(bool);
       },
 
-      /* Update buttons state according to the current range
+      /**
+       * Update buttons state according to the current range
+       *
+       * @param Range range
        */
       _refreshButtons: function(range){
         if(!range){
@@ -717,7 +772,8 @@
         }
       },
 
-      /* Reposition toolbar in the current editor
+      /**
+       * Reposition toolbar in the current editor
        */
       _repositionToolbar: function(){
         this.element.before(toolbar);

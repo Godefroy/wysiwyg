@@ -339,6 +339,7 @@
     var WYSIWYG = function(element, options){
       this.element = element;
       this.options = jQuery.extend({}, defaultOptions, options);
+      this.instanceEvents = jQuery({});
       this.events = [];
       this.enabled = false;
       this._blurEventDefined = false;
@@ -503,6 +504,10 @@
         })/*.appendTo(this.element)*/;
       },
 
+      on: function(eventName, fn){
+        this.instanceEvents.on(eventName, fn);
+      },
+
       /* Add an event on a element or a set of elements
        *
        * @param element jQuery set of elements
@@ -617,6 +622,7 @@
         var range = this._getRange();
         this._refreshButtons(range);
         jQuery(".wysiwyg-modal").hide();
+        this.instanceEvents.trigger("change");
       },
 
       _onkeydown: function(event){
@@ -642,9 +648,11 @@
         currentEditor = this;
         this._toggleToolbar(this.options.toolbar);
         this._repositionToolbar();
+
         // Blur event
         if(!this._blurEventDefined){
           this._blurEventDefined = true;
+          this.instanceEvents.trigger("focus");
           var documentElement = jQuery(document.documentElement);
           this._addEvent(documentElement, "mousedown", function(event){
             for(var i = toolElements.length-1; i >= 0; i--){
@@ -659,6 +667,7 @@
               this._toggleToolbar(false);
               this._blurEventDefined = false;
               this._removeEvents(documentElement, "mousedown");
+              this.instanceEvents.trigger("blur");
               if(this.options.cleanup){
                 this.cleanup();
               }

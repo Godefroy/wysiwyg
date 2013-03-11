@@ -450,14 +450,16 @@
 
         var nodes = this.element/*.contents().detach()*/.find("*").each(function(){
           var node = jQuery(this);
+          var nodeName = node.prop("nodeName").toLowerCase();
 
           // If empty, delete node
           if(node.html() == ""){
-            node.remove();
+            if(nodeName != "br"){
+              node.remove();
+            }
             return;
           }
 
-          var nodeName = node.prop("nodeName").toLowerCase();
           var replacement_tags = [];
           var replacement_styles = "";
           var replacement_block_styles = "";

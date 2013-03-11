@@ -40,6 +40,7 @@
 
     // Tool bar
     var toolbar = jQuery("#wysiwyg-toolbar").attr("contentEditable", false);
+    toolbar.width(toolbar.width());
 
     // List of elements used by WYSIWYG
     var toolElements = [toolbar];
@@ -365,6 +366,7 @@
           this._addEvent(this.element, "blur", this._onblur);
           this._addEvent(this.element, "keydown", this._onkeydown);
           this._addEvent(this.element, "keydown keyup paste change mouseup", this._onchange);
+          this._addEvent($(window), "scroll", this._repositionToolbar);
           this._addEvent(this.element, "paste", function(){
             setTimeout(function(){
               currentEditor.cleanup();
@@ -792,8 +794,34 @@
        * Reposition toolbar in the current editor
        */
       _repositionToolbar: function(){
-        this.element.before(toolbar);
-        toolbar.css(this.element.offset());
+        if(currentEditor == this){
+          this.element.before(toolbar);
+          var offset = this.element.offset(); // absolute position
+          var position = this.element.position(); // relative position
+          var scrollTop = $(document).scrollTop();
+          var scrollLeft = $(document).scrollLeft();
+          var width = toolbar.width();
+          var height = toolbar.height();
+          var windowWidth = $(window).width();
+          var windowHeight = $(window).height();
+          var marginTop = parseInt(toolbar.css("margin-top"), 10);
+          var marginLeft = parseInt(toolbar.css("margin-left"), 10);
+          offset.top += marginTop;
+          offset.left += marginLeft;
+          if(offset.top < scrollTop){
+            position.top += scrollTop - offset.top;
+          }
+          if(offset.left < scrollLeft){
+            position.left += scrollLeft - offset.left;
+          }
+          if(offset.top - scrollTop + height > windowHeight){
+            position.top += Math.max(scrollTop - offset.top, scrollTop - offset.top + windowHeight - height);
+          }
+          if(offset.left - scrollLeft + width > windowWidth){
+            position.left += Math.max(scrollLeft - offset.left, scrollLeft - offset.left + windowWidth - width);
+          }
+          toolbar.css(position);
+        }
       }
 
     };
